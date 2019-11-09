@@ -7,7 +7,7 @@ Extending great [LogNet gRPC Spring Boot Starter library](https://github.com/Log
 
 ## Quick Start
 
-Simple start consist only from 3 simple steps.
+Quick start consist only from 2 simple steps.
 
 (If you never used [gRPC library](https://github.com/LogNet/grpc-spring-boot-starter) before, have a look on this [basic setup](https://github.com/LogNet/grpc-spring-boot-starter#4-show-case) first.)
 
