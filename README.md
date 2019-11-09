@@ -16,7 +16,7 @@ Simple start consist only from 3 simple steps.
 ```xml
 <dependency>
   <groupId>io.github.majusko</groupId>
-  <artifactId>grpc-jwt-spring-boot-starter</artifactId>
+  <artifactId>grpc-apm-spring-boot-starter</artifactId>
   <version>${version}</version>
 </dependency>
 ```
