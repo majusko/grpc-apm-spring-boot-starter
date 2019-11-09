@@ -52,8 +52,8 @@ public class ApmClientInterceptor implements ClientInterceptor {
 
                     elasticApmTracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, addHeaders(headers));
 
-                    final Listener<RespT> tracingResponseListener =
-                        new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+                    final Listener<RespT> tracingResponseListener = new ForwardingClientCallListener
+                        .SimpleForwardingClientCallListener<RespT>(responseListener) {
                             @Override
                             public void onClose(Status status, Metadata metadata) {
                                 super.onClose(status, metadata);

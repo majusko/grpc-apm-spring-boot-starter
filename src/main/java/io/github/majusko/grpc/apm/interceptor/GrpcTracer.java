@@ -1,5 +1,6 @@
 package io.github.majusko.grpc.apm.interceptor;
 
+import co.elastic.apm.opentracing.ElasticApmTags;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.opentracing.Scope;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 @Component
 public class GrpcTracer {
 
+    private static final String APM_TYPE = "request";
     private final Tracer elasticApmTracer;
 
     public GrpcTracer(Tracer elasticApmTracer) {
@@ -24,7 +26,11 @@ public class GrpcTracer {
     public Span trace(ServerCall<?, ?> call, Metadata headers) {
         final String spanName = call.getMethodDescriptor().getFullMethodName();
         final SpanContext parentContext = elasticApmTracer.extract(Format.Builtin.HTTP_HEADERS, parseHeaders(headers));
-        final Span span = elasticApmTracer.buildSpan(spanName).asChildOf(parentContext).start();
+        final Span span = elasticApmTracer
+            .buildSpan(spanName)
+            .asChildOf(parentContext)
+            .withTag(ElasticApmTags.TYPE, APM_TYPE)
+            .start();
 
         activate(span);
 
