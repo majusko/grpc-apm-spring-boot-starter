@@ -29,8 +29,7 @@ public class ApmClientInterceptor implements ClientInterceptor {
 
             @Override
             public Iterator<Map.Entry<String, String>> iterator() {
-                throw new UnsupportedOperationException(
-                    "TextMapInjectAdapter should only be used with Tracer.inject()");
+                throw new UnsupportedOperationException("TextMapAdapter should only be used with Tracer.inject()");
             }
         };
     }
