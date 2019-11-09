@@ -1,5 +1,5 @@
 syntax = "proto3";
-package io.github.majusko.grpc.jwt.interceptor.proto;
+package io.github.majusko.grpc.apm.interceptor.proto;
 
 import "google/protobuf/empty.proto";
 
