@@ -4,9 +4,11 @@ import co.elastic.apm.opentracing.ElasticApmTracer;
 import io.github.majusko.grpc.apm.interceptor.ApmClientInterceptor;
 import io.opentracing.Tracer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ComponentScan
 public class GrpcApmAutoConfiguration {
 
     @Bean
