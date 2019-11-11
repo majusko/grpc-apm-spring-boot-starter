@@ -1,8 +1,9 @@
-# Spring boot starter for [gRPC framework](https://grpc.io/) with [Elastic APM tracer](https://elastic.org/) 
+# Spring boot starter for [gRPC framework](https://grpc.io/) with [Elastic APM tracer](https://www.elastic.co/products/apm) 
 
 [![Release](https://jitpack.io/v/majusko/grpc-apm-spring-boot-starter.svg)](https://jitpack.io/#majusko/grpc-apm-spring-boot-starter)
 [![Build Status](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter.svg?branch=master)](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter)
 [![Test Coverage](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master/graph/badge.svg)](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Extending great [LogNet gRPC Spring Boot Starter library](https://github.com/LogNet/grpc-spring-boot-starter) with APM tracer module. Easy implementation using a prepared interceptor beans ready for registration.
 
@@ -10,7 +11,8 @@ Extending great [LogNet gRPC Spring Boot Starter library](https://github.com/Log
 
 Quick start consist only from 2 simple steps.
 
-(If you never used [gRPC library](https://github.com/LogNet/grpc-spring-boot-starter) before, have a look on this [basic setup](https://github.com/LogNet/grpc-spring-boot-starter#4-show-case) first.)
+- If you never used [LogNet gRPC library](https://github.com/LogNet/grpc-spring-boot-starter) before, have a look on this [basic setup](https://github.com/LogNet/grpc-spring-boot-starter#4-show-case) first.
+- If you never used [Elastic APM tracer](https://www.elastic.co/products/apm) before, have a look on this [basic setup](https://www.elastic.co/guide/en/apm/agent/java/1.x/setup.html) first.
 
 #### 1. Add Maven dependency
 
