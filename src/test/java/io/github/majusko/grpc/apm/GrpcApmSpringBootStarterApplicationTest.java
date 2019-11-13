@@ -1,17 +1,22 @@
 package io.github.majusko.grpc.apm;
 
+import co.elastic.apm.opentracing.ElasticApmTracer;
 import com.google.protobuf.Empty;
 import io.github.majusko.grpc.apm.interceptor.ApmClientInterceptor;
 import io.github.majusko.grpc.apm.interceptor.ApmServerInterceptor;
 import io.github.majusko.grpc.apm.interceptor.GrpcApmContext;
+import io.github.majusko.grpc.apm.interceptor.GrpcTracer;
 import io.github.majusko.grpc.apm.interceptor.proto.Example;
 import io.github.majusko.grpc.apm.interceptor.proto.ExampleServiceGrpc;
 import io.grpc.*;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.mock.MockTracer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -20,16 +25,42 @@ import org.junit.runner.RunWith;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
+import static io.grpc.Metadata.BINARY_BYTE_MARSHALLER;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("test")
 public class GrpcApmSpringBootStarterApplicationTest {
+
+	@Configuration
+	@Import(GrpcApmAutoConfiguration.class)
+	static class ContextConfiguration {
+		@Bean
+		@Primary
+		public Tracer elasticApmTracer() {
+			return new MockTracer();
+		}
+
+		@Bean
+		@Primary
+		public ApmClientInterceptor apmClientInterceptor() {
+			return new ApmClientInterceptor(elasticApmTracer());
+		}
+	}
+
+	@Autowired
+	private Tracer elasticApmTracer;
 
 	@Autowired
 	private ApmClientInterceptor apmClientInterceptor;
@@ -59,6 +90,29 @@ public class GrpcApmSpringBootStarterApplicationTest {
 		final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
 			.newBlockingStub(interceptedChannel);
 		final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
+
+		Assert.assertNotNull(response);
+		Awaitility.await().untilTrue(testService.getExecutedGetExample());
+	}
+
+	@Test
+	public void testGettingActiveSpan() throws IOException {
+		final Span span = elasticApmTracer.buildSpan("activating-some-span").start();
+
+		elasticApmTracer.activateSpan(span);
+
+		final ExampleService testService = new ExampleService();
+		final ManagedChannel channel = initTestServer(testService);
+		final Channel interceptedChannel = ClientInterceptors.intercept(channel, apmClientInterceptor);
+		final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
+			.newBlockingStub(interceptedChannel);
+
+		final Metadata header = new Metadata();
+		header.put(Metadata.Key.of("mocked-bin-header" + Metadata.BINARY_HEADER_SUFFIX, BINARY_BYTE_MARSHALLER), "random-value".getBytes());
+
+		final ExampleServiceGrpc.ExampleServiceBlockingStub injectedStub = MetadataUtils.attachHeaders(stub, header);
+
+		final Empty response = injectedStub.getExample(Example.GetExampleRequest.newBuilder().build());
 
 		Assert.assertNotNull(response);
 		Awaitility.await().untilTrue(testService.getExecutedGetExample());
@@ -102,6 +156,12 @@ class ExampleService extends ExampleServiceGrpc.ExampleServiceImplBase {
 		response.onNext(Empty.getDefaultInstance());
 		response.onCompleted();
 		executedListExample.set(true);
+	}
+
+	@Override
+	public void someAction(Empty request, StreamObserver<Empty> response) {
+		response.onError(Status.CANCELLED.asRuntimeException());
+		response.onCompleted();
 	}
 
 	AtomicBoolean getExecutedGetExample() {
