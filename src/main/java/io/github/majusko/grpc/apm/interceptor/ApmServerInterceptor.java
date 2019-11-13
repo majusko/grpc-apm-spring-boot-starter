@@ -10,10 +10,6 @@ import org.slf4j.LoggerFactory;
 @GRpcGlobalInterceptor
 public class ApmServerInterceptor implements ServerInterceptor {
 
-    private static final ServerCall.Listener NOOP_LISTENER = new ServerCall.Listener() {
-    };
-
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final GrpcTracer grpcTracer;
 
     public ApmServerInterceptor(GrpcTracer grpcTracer) {
@@ -25,17 +21,9 @@ public class ApmServerInterceptor implements ServerInterceptor {
         ServerCall<ReqT, RespT> call, Metadata metadata, ServerCallHandler<ReqT, RespT> next
     ) {
         final Span span = grpcTracer.trace(call, metadata);
+        final Context context = Context.current().withValue(GrpcApmContext.ACTIVE_SPAN_KEY, span);
 
-        try {
-            final Context context = Context.current().withValue(GrpcApmContext.ACTIVE_SPAN_KEY, span);
-
-            return buildListener(call, metadata, next, context, span);
-        } catch(Exception e) {
-            logger.error(e.getMessage(), e);
-            span.finish();
-            //noinspection unchecked
-            return NOOP_LISTENER;
-        }
+        return buildListener(call, metadata, next, context, span);
     }
 
     private <ReqT, RespT> ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> buildListener(

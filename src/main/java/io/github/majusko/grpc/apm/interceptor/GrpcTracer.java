@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class GrpcTracer {
 
     private static final String APM_TYPE = "request";
+
     private final Tracer elasticApmTracer;
 
     public GrpcTracer(Tracer elasticApmTracer) {

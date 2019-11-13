@@ -40,7 +40,6 @@ public class ApmClientInterceptor implements ClientInterceptor {
         CallOptions callOptions,
         Channel next
     ) {
-
         final String operationName = method.getFullMethodName();
         final Span span = elasticApmTracer.buildSpan(operationName).asChildOf(elasticApmTracer.activeSpan()).start();
 
