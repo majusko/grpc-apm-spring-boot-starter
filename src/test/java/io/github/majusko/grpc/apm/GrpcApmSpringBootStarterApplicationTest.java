@@ -1,11 +1,9 @@
 package io.github.majusko.grpc.apm;
 
-import co.elastic.apm.opentracing.ElasticApmTracer;
 import com.google.protobuf.Empty;
 import io.github.majusko.grpc.apm.interceptor.ApmClientInterceptor;
 import io.github.majusko.grpc.apm.interceptor.ApmServerInterceptor;
 import io.github.majusko.grpc.apm.interceptor.GrpcApmContext;
-import io.github.majusko.grpc.apm.interceptor.GrpcTracer;
 import io.github.majusko.grpc.apm.interceptor.proto.Example;
 import io.github.majusko.grpc.apm.interceptor.proto.ExampleServiceGrpc;
 import io.grpc.*;
@@ -33,9 +31,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
 import static io.grpc.Metadata.BINARY_BYTE_MARSHALLER;
 
 @RunWith(SpringRunner.class)
@@ -43,132 +41,175 @@ import static io.grpc.Metadata.BINARY_BYTE_MARSHALLER;
 @ActiveProfiles("test")
 public class GrpcApmSpringBootStarterApplicationTest {
 
-	@Configuration
-	@Import(GrpcApmAutoConfiguration.class)
-	static class ContextConfiguration {
-		@Bean
-		@Primary
-		public Tracer elasticApmTracer() {
-			return new MockTracer();
-		}
+    @Configuration
+    @Import(GrpcApmAutoConfiguration.class)
+    static class ContextConfiguration {
+        @Bean
+        @Primary
+        public Tracer elasticApmTracer() {
+            return new MockTracer();
+        }
 
-		@Bean
-		@Primary
-		public ApmClientInterceptor apmClientInterceptor() {
-			return new ApmClientInterceptor(elasticApmTracer());
-		}
-	}
+        @Bean
+        @Primary
+        public ApmClientInterceptor apmClientInterceptor() {
+            return new ApmClientInterceptor(elasticApmTracer());
+        }
+    }
 
-	@Autowired
-	private Tracer elasticApmTracer;
+    @Autowired
+    private Tracer elasticApmTracer;
 
-	@Autowired
-	private ApmClientInterceptor apmClientInterceptor;
+    @Autowired
+    private ApmClientInterceptor apmClientInterceptor;
 
-	@Autowired
-	private ApmServerInterceptor apmServerInterceptor;
+    @Autowired
+    private ApmServerInterceptor apmServerInterceptor;
 
-	@Rule
-	public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+    @Rule
+    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-	@Test
-	public void testWithoutClient() throws IOException {
-		final ExampleService testService = new ExampleService();
-		final ManagedChannel channel = initTestServer(testService);
-		final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc.newBlockingStub(channel);
-		final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
+    static ManagedChannel customChannel;
 
-		Assert.assertNotNull(response);
-		Awaitility.await().untilTrue(testService.getExecutedGetExample());
-	}
+    @Test
+    public void testWithoutClient() throws IOException, NoSuchFieldException, IllegalAccessException {
+        final ExampleService testService = new ExampleService();
+        final ManagedChannel channel = initTestServer(testService);
+        final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc.newBlockingStub(channel);
+        final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-	@Test
-	public void testWithClient() throws IOException {
-		final ExampleService testService = new ExampleService();
-		final ManagedChannel channel = initTestServer(testService);
-		final Channel interceptedChannel = ClientInterceptors.intercept(channel, apmClientInterceptor);
-		final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
-			.newBlockingStub(interceptedChannel);
-		final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
+        Assert.assertNotNull(response);
+        Awaitility.await().untilTrue(testService.getExecutedGetExample());
 
-		Assert.assertNotNull(response);
-		Awaitility.await().untilTrue(testService.getExecutedGetExample());
-	}
+        validateSpan();
+    }
 
-	@Test
-	public void testGettingActiveSpan() throws IOException {
-		final Span span = elasticApmTracer.buildSpan("activating-some-span").start();
+    @Test
+    public void testWithClient() throws IOException, NoSuchFieldException, IllegalAccessException {
+        final ExampleService testService = new ExampleService();
+        final ManagedChannel channel = initTestServer(testService);
+        final Channel interceptedChannel = ClientInterceptors.intercept(channel, apmClientInterceptor);
+        final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
+            .newBlockingStub(interceptedChannel);
+        final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-		elasticApmTracer.activateSpan(span);
+        Assert.assertNotNull(response);
+        Awaitility.await().untilTrue(testService.getExecutedGetExample());
 
-		final ExampleService testService = new ExampleService();
-		final ManagedChannel channel = initTestServer(testService);
-		final Channel interceptedChannel = ClientInterceptors.intercept(channel, apmClientInterceptor);
-		final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
-			.newBlockingStub(interceptedChannel);
+        validateSpan();
+    }
 
-		final Metadata header = new Metadata();
-		header.put(Metadata.Key.of("mocked-bin-header" + Metadata.BINARY_HEADER_SUFFIX, BINARY_BYTE_MARSHALLER), "random-value".getBytes());
+    @Test
+    public void testGettingActiveSpanAndBinaryHeader() throws IOException, NoSuchFieldException,
+		IllegalAccessException {
+        final Span span = elasticApmTracer.buildSpan("activating-some-span").start();
 
-		final ExampleServiceGrpc.ExampleServiceBlockingStub injectedStub = MetadataUtils.attachHeaders(stub, header);
+        elasticApmTracer.activateSpan(span);
 
-		final Empty response = injectedStub.getExample(Example.GetExampleRequest.newBuilder().build());
+        final ExampleService testService = new ExampleService();
+        final ManagedChannel channel = initTestServer(testService);
+        final Channel interceptedChannel = ClientInterceptors.intercept(channel, apmClientInterceptor);
+        final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
+            .newBlockingStub(interceptedChannel);
 
-		Assert.assertNotNull(response);
-		Awaitility.await().untilTrue(testService.getExecutedGetExample());
-	}
+        final Metadata header = new Metadata();
+        header.put(Metadata.Key.of("mocked-bin-header" + Metadata.BINARY_HEADER_SUFFIX, BINARY_BYTE_MARSHALLER),
+			"random-value".getBytes());
 
-	private ManagedChannel initTestServer(BindableService service) throws IOException {
+        final ExampleServiceGrpc.ExampleServiceBlockingStub injectedStub = MetadataUtils.attachHeaders(stub, header);
 
-		final String serverName = InProcessServerBuilder.generateName();
-		final Server server = InProcessServerBuilder
-			.forName(serverName).directExecutor()
-			.addService(service)
-			.intercept(apmServerInterceptor)
-			.build().start();
+        final Empty response = injectedStub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-		grpcCleanup.register(server);
+        Assert.assertNotNull(response);
 
-		return grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
-	}
+        validateSpan();
+    }
+
+    @Test
+    public void testWithShutDown() throws IOException, NoSuchFieldException, IllegalAccessException {
+        final ExampleService testService = new ExampleService();
+        customChannel = initTestServer(testService);
+        final Channel interceptedChannel = ClientInterceptors.intercept(customChannel, apmClientInterceptor);
+        final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc
+            .newBlockingStub(interceptedChannel);
+
+        Status status = Status.OK;
+
+        try {
+			final Empty ignore = stub.someAction(Empty.getDefaultInstance());
+        } catch(StatusRuntimeException e) {
+            status = e.getStatus();
+        }
+
+        Assert.assertEquals(Status.CANCELLED.getCode(), status.getCode());
+
+        validateSpan();
+    }
+
+    private void validateSpan() throws NoSuchFieldException, IllegalAccessException {
+        final Span span = elasticApmTracer.activeSpan();
+
+        Assert.assertNotNull(span);
+
+        final Field operationName = span.getClass().getDeclaredField("operationName");
+        final Field finished = span.getClass().getDeclaredField("finished");
+
+        operationName.setAccessible(true);
+        finished.setAccessible(true);
+
+        final String spanName = (String) operationName.get(span);
+        final Boolean isFinished = (Boolean) finished.get(span);
+
+        Assert.assertTrue(spanName.startsWith("io.github.majusko.grpc.apm"));
+        Assert.assertTrue(isFinished);
+    }
+
+    private ManagedChannel initTestServer(BindableService service) throws IOException {
+
+        final String serverName = InProcessServerBuilder.generateName();
+        final Server server = InProcessServerBuilder
+            .forName(serverName).directExecutor()
+            .addService(service)
+            .intercept(apmServerInterceptor)
+            .build().start();
+
+        grpcCleanup.register(server);
+
+        return grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
+    }
 }
 
 @GRpcService
 class ExampleService extends ExampleServiceGrpc.ExampleServiceImplBase {
 
-	private final AtomicBoolean executedGetExample = new AtomicBoolean(false);
-	private final AtomicBoolean executedListExample = new AtomicBoolean(false);
+    private final AtomicBoolean executedGetExample = new AtomicBoolean(false);
 
-	@Override
-	public void getExample(Example.GetExampleRequest request, StreamObserver<Empty> response) {
-		final Span activeSpan = GrpcApmContext.get().orElseThrow(RuntimeException::new);
+    @Override
+    public void getExample(Example.GetExampleRequest request, StreamObserver<Empty> response) {
+        final Span activeSpan = GrpcApmContext.get().orElseThrow(RuntimeException::new);
 
-		Assert.assertNotNull(activeSpan);
+        Assert.assertNotNull(activeSpan);
 
-		response.onNext(Empty.getDefaultInstance());
-		response.onCompleted();
-		executedGetExample.set(true);
-	}
+        response.onNext(Empty.getDefaultInstance());
+        response.onCompleted();
+        executedGetExample.set(true);
+    }
 
-	@Override
-	public void listExample(Example.GetExampleRequest request, StreamObserver<Empty> response) {
+    @Override
+    public void listExample(Example.GetExampleRequest request, StreamObserver<Empty> response) {
+        response.onNext(Empty.getDefaultInstance());
+        response.onCompleted();
+    }
 
-		response.onNext(Empty.getDefaultInstance());
-		response.onCompleted();
-		executedListExample.set(true);
-	}
+    @Override
+    public void someAction(Empty request, StreamObserver<Empty> response) {
+        GrpcApmSpringBootStarterApplicationTest.customChannel.shutdown();
 
-	@Override
-	public void someAction(Empty request, StreamObserver<Empty> response) {
-		response.onError(Status.CANCELLED.asRuntimeException());
-		response.onCompleted();
-	}
+        response.onCompleted();
+    }
 
-	AtomicBoolean getExecutedGetExample() {
-		return executedGetExample;
-	}
-
-	AtomicBoolean getExecutedListExample() {
-		return executedListExample;
-	}
+    AtomicBoolean getExecutedGetExample() {
+        return executedGetExample;
+    }
 }
+
