@@ -3,7 +3,7 @@
 [![Release](https://jitpack.io/v/majusko/grpc-apm-spring-boot-starter.svg)](https://jitpack.io/#majusko/grpc-apm-spring-boot-starter)
 [![Build Status](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter.svg?branch=master)](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter)
 [![Test Coverage](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master/graph/badge.svg)](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Join the chat at https://gitter.im/grpc-apm-spring-boot-starter/community](https://badges.gitter.im/grpc-apm-spring-boot-starter/community.svg)](https://gitter.im/grpc-apm-spring-boot-starter/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Extending great [LogNet gRPC Spring Boot Starter library](https://github.com/LogNet/grpc-spring-boot-starter) with APM tracer module. Easy implementation using a prepared interceptor beans ready for registration.
 
