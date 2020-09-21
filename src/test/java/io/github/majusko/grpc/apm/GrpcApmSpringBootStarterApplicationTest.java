@@ -16,19 +16,17 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.mock.MockTracer;
 import org.awaitility.Awaitility;
-import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -36,26 +34,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.grpc.Metadata.BINARY_BYTE_MARSHALLER;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
 @ActiveProfiles("test")
+@SpringBootTest(properties = {"spring.main.allow-bean-definition-overriding=true", "spring.autoconfigure.exclude=io" +
+    ".github.majusko.grpc.apm.GrpcApmAutoConfiguration"})
+@Import({MyTestConfig.class})
 public class GrpcApmSpringBootStarterApplicationTest {
-
-    @Configuration
-    @Import(GrpcApmAutoConfiguration.class)
-    static class ContextConfiguration {
-        @Bean
-        @Primary
-        public Tracer elasticApmTracer() {
-            return new MockTracer();
-        }
-
-        @Bean
-        @Primary
-        public ApmClientInterceptor apmClientInterceptor() {
-            return new ApmClientInterceptor(elasticApmTracer());
-        }
-    }
 
     @Autowired
     private Tracer elasticApmTracer;
@@ -78,7 +61,7 @@ public class GrpcApmSpringBootStarterApplicationTest {
         final ExampleServiceGrpc.ExampleServiceBlockingStub stub = ExampleServiceGrpc.newBlockingStub(channel);
         final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-        Assert.assertNotNull(response);
+        Assertions.assertNotNull(response);
         Awaitility.await().untilTrue(testService.getExecutedGetExample());
 
         validateSpan();
@@ -93,7 +76,7 @@ public class GrpcApmSpringBootStarterApplicationTest {
             .newBlockingStub(interceptedChannel);
         final Empty response = stub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-        Assert.assertNotNull(response);
+        Assertions.assertNotNull(response);
         Awaitility.await().untilTrue(testService.getExecutedGetExample());
 
         validateSpan();
@@ -101,7 +84,7 @@ public class GrpcApmSpringBootStarterApplicationTest {
 
     @Test
     public void testGettingActiveSpanAndBinaryHeader() throws IOException, NoSuchFieldException,
-		IllegalAccessException {
+        IllegalAccessException {
         final Span span = elasticApmTracer.buildSpan("activating-some-span").start();
 
         elasticApmTracer.activateSpan(span);
@@ -114,13 +97,13 @@ public class GrpcApmSpringBootStarterApplicationTest {
 
         final Metadata header = new Metadata();
         header.put(Metadata.Key.of("mocked-bin-header" + Metadata.BINARY_HEADER_SUFFIX, BINARY_BYTE_MARSHALLER),
-			"random-value".getBytes());
+            "random-value".getBytes());
 
         final ExampleServiceGrpc.ExampleServiceBlockingStub injectedStub = MetadataUtils.attachHeaders(stub, header);
 
         final Empty response = injectedStub.getExample(Example.GetExampleRequest.newBuilder().build());
 
-        Assert.assertNotNull(response);
+        Assertions.assertNotNull(response);
 
         validateSpan();
     }
@@ -136,12 +119,12 @@ public class GrpcApmSpringBootStarterApplicationTest {
         Status status = Status.OK;
 
         try {
-			final Empty ignore = stub.someAction(Empty.getDefaultInstance());
-        } catch(StatusRuntimeException e) {
+            final Empty ignore = stub.someAction(Empty.getDefaultInstance());
+        } catch (StatusRuntimeException e) {
             status = e.getStatus();
         }
 
-        Assert.assertEquals(Status.CANCELLED.getCode(), status.getCode());
+        Assertions.assertEquals(Status.CANCELLED.getCode(), status.getCode());
 
         validateSpan();
     }
@@ -149,7 +132,7 @@ public class GrpcApmSpringBootStarterApplicationTest {
     private void validateSpan() throws NoSuchFieldException, IllegalAccessException {
         final Span span = elasticApmTracer.activeSpan();
 
-        Assert.assertNotNull(span);
+        Assertions.assertNotNull(span);
 
         final Field operationName = span.getClass().getDeclaredField("operationName");
         final Field finished = span.getClass().getDeclaredField("finished");
@@ -160,8 +143,8 @@ public class GrpcApmSpringBootStarterApplicationTest {
         final String spanName = (String) operationName.get(span);
         final Boolean isFinished = (Boolean) finished.get(span);
 
-        Assert.assertTrue(spanName.startsWith("io.github.majusko.grpc.apm"));
-        Assert.assertTrue(isFinished);
+        Assertions.assertTrue(spanName.startsWith("io.github.majusko.grpc.apm"));
+        Assertions.assertTrue(isFinished);
     }
 
     private ManagedChannel initTestServer(BindableService service) throws IOException {
@@ -179,6 +162,21 @@ public class GrpcApmSpringBootStarterApplicationTest {
     }
 }
 
+@TestConfiguration
+class MyTestConfig {
+    @Bean
+    @Primary
+    public Tracer elasticApmTracer() {
+        return new MockTracer();
+    }
+
+    @Bean
+    @Primary
+    public ApmClientInterceptor apmClientInterceptor() {
+        return new ApmClientInterceptor(elasticApmTracer());
+    }
+}
+
 @GRpcService
 class ExampleService extends ExampleServiceGrpc.ExampleServiceImplBase {
 
@@ -188,7 +186,7 @@ class ExampleService extends ExampleServiceGrpc.ExampleServiceImplBase {
     public void getExample(Example.GetExampleRequest request, StreamObserver<Empty> response) {
         final Span activeSpan = GrpcApmContext.get().orElseThrow(RuntimeException::new);
 
-        Assert.assertNotNull(activeSpan);
+        Assertions.assertNotNull(activeSpan);
 
         response.onNext(Empty.getDefaultInstance());
         response.onCompleted();
