@@ -30,7 +30,7 @@
         <dependency>
             <groupId>co.elastic.apm</groupId>
             <artifactId>apm-opentracing</artifactId>
-            <version>1.10.0</version>
+            <version>1.18.0</version>
         </dependency>
 
         <dependency>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.0.0-rc1</version>
+            <version>4.0.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -89,7 +89,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.6</version>
+            <version>1.18.12</version>
             <scope>provided</scope>
         </dependency>
 
@@ -144,7 +144,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.3</version>
+                <version>0.8.6</version>
                 <configuration>
                     <excludes>
                         <exclude>**/*Application.*</exclude>
