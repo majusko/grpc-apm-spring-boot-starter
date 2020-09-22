@@ -12,7 +12,7 @@
 
     <groupId>io.github.majusko</groupId>
     <artifactId>grpc-apm-spring-boot-starter</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5-SNAPASHOT</version>
     <name>grpc-apm-spring-boot-starter</name>
     <description>Elastic APM Tracer for your Grpc Spring Boot project</description>
 
