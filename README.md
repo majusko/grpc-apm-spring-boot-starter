@@ -1,5 +1,6 @@
 # Spring boot starter for [gRPC framework](https://grpc.io/) with [Elastic APM tracer](https://www.elastic.co/products/apm) 
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.majusko/grpc-apm-spring-boot-starter/badge.svg)](https://search.maven.org/search?q=g:io.github.majusko)
 [![Release](https://jitpack.io/v/majusko/grpc-apm-spring-boot-starter.svg)](https://jitpack.io/#majusko/grpc-apm-spring-boot-starter)
 [![Build Status](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter.svg?branch=master)](https://travis-ci.com/majusko/grpc-apm-spring-boot-starter)
 [![Test Coverage](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master/graph/badge.svg)](https://codecov.io/gh/majusko/grpc-apm-spring-boot-starter/branch/master)
@@ -15,15 +16,6 @@ Quick start consist only from 2 simple steps.
 - If you never used [Elastic APM tracer](https://www.elastic.co/products/apm) before, have a look on this [basic setup](https://www.elastic.co/guide/en/apm/agent/java/1.x/setup.html) first.
 
 #### 1. Add Maven dependency
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-```
 
 ```xml
 <dependency>
