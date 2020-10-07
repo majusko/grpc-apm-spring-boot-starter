@@ -30,7 +30,7 @@
         <dependency>
             <groupId>co.elastic.apm</groupId>
             <artifactId>apm-opentracing</artifactId>
-            <version>1.18.0</version>
+            <version>1.18.1</version>
         </dependency>
 
         <dependency>
