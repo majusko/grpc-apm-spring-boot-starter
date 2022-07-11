@@ -24,7 +24,7 @@
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <grpc-spring-boot-starter.version>4.5.0</grpc-spring-boot-starter.version>
-        <apm-opentracing.version>1.23.0</apm-opentracing.version>
+        <apm-opentracing.version>1.33.0</apm-opentracing.version>
     </properties>
 
     <dependencies>
